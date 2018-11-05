@@ -33,7 +33,7 @@ app.post('/insertDummyUsers',(req,res)=>{
             deviceToken : deviceToken 
            } 
         insertArray.push(obj);
-        userId++ ;
+        
     }
 
     USER.insertMany(insertArray,(err,result)=>{
@@ -45,17 +45,21 @@ app.post('/insertDummyUsers',(req,res)=>{
     })
 })
 
+
+
 app.post('/sendBulkNotificaitons',(req,res)=>{
     let promiseArray = [] ;
-     let stream = USER.find({}).stream ;
-    let perThousandUser = []
+     let stream = USER.find({}).cursor() ;
+    let perThousandUser = [] ;
     let i = 0;
+    
     stream.on('data',(doc)=>{
+        console.log('doc is this-->',doc);
         if( i < 1000){
             perThousandUser.push(doc.deviceToken);
             i++ ;
-        }else{
-            promiseArray.push(fcmPush.sendFcmPush(perThousandUser));
+        } else {
+            promiseArray.push(fcmPush.sendFcmPush(perThousandUser,"Welcome to app"));
             perThousandUser = [];
             i = 0;
         }   
@@ -63,12 +67,13 @@ app.post('/sendBulkNotificaitons',(req,res)=>{
 
     stream.on('end',()=>{
         if(perThousandUser.length > 0){
-            promiseArray.push(fcmPush.sendFcmPush(perThousandUser));
+            promiseArray.push(fcmPush.sendFcmPush(perThousandUser,"Welcome to app"));
         }
         Promise.all(promiseArray).then(()=>{
             response.sendSuccess(res);
         }).catch((err)=>{
-            response.sendError(err);
+            console.log('error os this--->',err);
+            response.sendError(res);
         })
     })
 
